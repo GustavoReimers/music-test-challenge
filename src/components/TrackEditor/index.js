@@ -1,10 +1,12 @@
-import { useState } from 'react';
-import * as Tone from 'tone';
+import { useContext, useState } from "react";
+import * as Tone from "tone";
 
-import { SAVED_TRACKS_STORAGE_KEY } from 'config';
+import { SAVED_TRACKS_STORAGE_KEY } from "config";
 
-import TrackEditorInfo from './TrackEditorInfo';
-import TrackEditorDrop from './TrackEditorDrop';
+import TrackEditorInfo from "./TrackEditorInfo";
+import TrackEditorDrop from "./TrackEditorDrop";
+
+import { AppContext } from "containers/App";
 
 function TrackEditor({
   previewXOffset,
@@ -18,32 +20,38 @@ function TrackEditor({
 }) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [trackProgress, setTrackProgress] = useState(0);
-  const [trackName, setTrackName] = useState('Track Name');
+  const [trackName, setTrackName] = useState("Track Name");
+  const { state, dispatch } = useContext(AppContext);
 
   const play = () => {
     Tone.start().then(() => {
-      for(let i = 0; i < selectedSamples.length; i++) {
-        selectedSamples[i].player.sync().start(selectedSamples[i].secondsToStart);
+      for (let i = 0; i < selectedSamples.length; i++) {
+        selectedSamples[i].player
+          .sync()
+          .start(selectedSamples[i].secondsToStart);
       }
-  
+
       let firstTime = null;
       Tone.Transport.position = 0;
       Tone.Transport.seconds = 0;
-  
+
       Tone.Transport.scheduleRepeat((time) => {
-        if(!firstTime) {
+        if (!firstTime) {
           firstTime = time;
         }
-        const progress = (time - firstTime) / trackTime * 100;
+        const progress = ((time - firstTime) / trackTime) * 100;
         setTrackProgress(progress);
-        if(progress >= 100) {
+        if (progress >= 100) {
           stop();
         }
       }, 0.1);
-  
-      
+
       Tone.Transport.start();
       setIsPlaying(true);
+      dispatch({
+        type: "setIsPlaying",
+        payload: true,
+      });
     });
   };
 
@@ -54,13 +62,17 @@ function TrackEditor({
     Tone.Transport.stop();
     Tone.Transport.seconds = 0;
     Tone.Transport.position = 0;
-    for(let i = 0; i < selectedSamples.length; i++) {
+    for (let i = 0; i < selectedSamples.length; i++) {
       selectedSamples[i].player.unsync();
     }
+    dispatch({
+      type: "setIsPlaying",
+      payload: false,
+    });
   };
 
   const save = () => {
-    let samplesToSave = selectedSamples.map(sample => ({
+    let samplesToSave = selectedSamples.map((sample) => ({
       id: sample.id,
       audio: sample.audio,
       leftOffset: sample.leftOffset,
@@ -76,16 +88,18 @@ function TrackEditor({
       samples: samplesToSave,
     };
     const newSavedTracks = [...savedTracks, trackToSave];
-    localStorage.setItem(SAVED_TRACKS_STORAGE_KEY, JSON.stringify(newSavedTracks));
-    setTrackName('Track Name');
+    localStorage.setItem(
+      SAVED_TRACKS_STORAGE_KEY,
+      JSON.stringify(newSavedTracks)
+    );
+    setTrackName("Track Name");
     setSavedTracks(newSavedTracks);
   };
 
   const handlePlayOrStop = () => {
-    if(isPlaying) {
+    if (isPlaying) {
       stop();
-    }
-    else {
+    } else {
       play();
     }
   };
@@ -98,7 +112,7 @@ function TrackEditor({
           setTrackName,
           isPlaying,
           handlePlayOrStop,
-          save
+          save,
         }}
       />
       <TrackEditorDrop
@@ -114,7 +128,7 @@ function TrackEditor({
         }}
       />
     </div>
-  )
+  );
 }
 
 export default TrackEditor;

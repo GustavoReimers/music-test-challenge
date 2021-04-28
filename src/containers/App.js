@@ -1,17 +1,20 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useReducer, useState } from "react";
 import {
   DndContext,
   useSensor,
   useSensors,
   MouseSensor,
-  TouchSensor
-} from '@dnd-kit/core';
-import * as Tone from 'tone';
-import { SAVED_TRACKS_STORAGE_KEY } from 'config';
+  TouchSensor,
+} from "@dnd-kit/core";
+import * as Tone from "tone";
+import { SAVED_TRACKS_STORAGE_KEY } from "config";
 
-import { Header, Sidebar } from 'components';
-import { getRandomColor } from 'utils';
-import Main from './Main';
+import { Header, Sidebar } from "components";
+import { getRandomColor } from "utils";
+import Main from "./Main";
+import { appReducer, initialState } from "appReducer";
+
+export const AppContext = React.createContext();
 
 function App() {
   const [previewXOffset, setPreviewXOffset] = useState(null);
@@ -19,10 +22,12 @@ function App() {
   const [latestDropWidth, setLatestDropWidth] = useState(0);
   const [savedTracks, setSavedTracks] = useState([]);
 
+  const [state, dispatch] = useReducer(appReducer, initialState);
+
   // Track time in seconds
   const trackTime = 30;
 
-  const handleDragEnd = event => {
+  const handleDragEnd = (event) => {
     const { active, over } = event;
     const dropZoneWidth = over?.rect?.width || 0;
     setLatestDropWidth(dropZoneWidth);
@@ -42,22 +47,22 @@ function App() {
             title: active?.data?.current?.title,
             color: getRandomColor(),
             audio: active?.data?.current?.audio,
-            secondsToStart
-          }
+            secondsToStart,
+          },
         ]);
       });
     }
   };
 
   const activationConstraint = {
-    distance: { x: 1, y: 1 }
+    distance: { x: 1, y: 1 },
   };
 
   const mouseSensor = useSensor(MouseSensor, {
-    activationConstraint
+    activationConstraint,
   });
   const touchSensor = useSensor(TouchSensor, {
-    activationConstraint
+    activationConstraint,
   });
   const sensors = useSensors(mouseSensor, touchSensor);
 
@@ -70,24 +75,26 @@ function App() {
 
   return (
     <DndContext onDragEnd={handleDragEnd} sensors={sensors}>
-      <div className='app'>
-        <Header />
-        <Sidebar />
-        <div className='main-container'>
-          <Main
-            {...{
-              previewXOffset,
-              setPreviewXOffset,
-              selectedSamples,
-              setSelectedSamples,
-              trackTime,
-              latestDropWidth,
-              savedTracks,
-              setSavedTracks
-            }}
-          />
+      <AppContext.Provider value={{ state, dispatch }}>
+        <div className="app">
+          <Header />
+          <Sidebar />
+          <div className="main-container">
+            <Main
+              {...{
+                previewXOffset,
+                setPreviewXOffset,
+                selectedSamples,
+                setSelectedSamples,
+                trackTime,
+                latestDropWidth,
+                savedTracks,
+                setSavedTracks,
+              }}
+            />
+          </div>
         </div>
-      </div>
+      </AppContext.Provider>
     </DndContext>
   );
 }
