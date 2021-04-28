@@ -1,0 +1,9 @@
+@import '../variables.scss';
+
+.main-container {
+  padding-left: $sidebarWidth;
+  padding-top: $headerSize;
+  .main {
+    padding: 24px 12px;
+  }
+}
